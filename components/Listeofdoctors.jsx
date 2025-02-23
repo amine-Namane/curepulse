@@ -14,7 +14,7 @@ export default async function  Doctorlist({doctortype ,doctors
     <section >
         <h1 className='text-xl font-bold'>{doctortype}</h1>
    <ul className='grid grid-cols-4 gap-4'>
-   {doctors.map((doct)=>(
+   {doctors?.map((doct)=>(
                <Doctorcart doct={doct} />
            ))}
        </ul></section>

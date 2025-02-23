@@ -1,9 +1,9 @@
 
-import { DOctorForm } from '@/components/ui/Doctorform'
+import { DoctorForm } from '@/components/Doctorform'
 import React from 'react'
 
 export default function Admin() {
   return (
-    <DOctorForm />
+    <DoctorForm />
   )
 }

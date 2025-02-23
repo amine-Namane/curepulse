@@ -1,19 +1,68 @@
+'use client'
 import { Input } from "@/components/ui/input"
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { supabase } from '@/lib/supabaseclient';
+import { redirect } from 'next/navigation';
+import { useRouter } from "next/navigation"
 
-async function getDoctorlist() {
-  const res = await fetch('http://localhost:3000/api/doctors-list');
-  if (!res.ok) {
-    throw new Error(`Failed to fetch doctor types (HTTP ${res.status})`);
-  }
-  return res.json();
-}
+// async function getDoctorlist() {
+//   const res = await fetch('http://localhost:3000/api/doctors-list');
+//   if (!res.ok) {
+//     throw new Error(`Failed to fetch doctor types (HTTP ${res.status})`);
+//   }
+//   return res.json();
+// }
 
 export default async function DoctorHome() {
-  const doctors = await getDoctorlist()
-  
+  // const doctors = await getDoctorlist()
+  // const { data: { user } } = await supabase.auth.getUser();
+  // if (!user) {
+  //   redirect('/Admin'); // Redirect if not logged in
+  // }
+  // const { data: userInfo, error } = await supabase
+  //   .from("users")
+  //   .select("role")
+  //   .eq("id", user.id)
+  //   .single();
+  //   if (error || !userInfo || userInfo.role !== "doctor") {
+  //     redirect('/unauthorized'); // Redirect unauthorized users
+  //   }
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      console.log("User ID:", user?.id);
+      if (error || !user) {
+        router.push("/DoctorHorme"); // Redirect if not authenticated
+        return;
+      }
+
+      // Check if the user is a doctor
+      const { data: userInfo, error: roleError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("user_id", user.id) // Change 'id' to correct column name
+        .single();
+
+      if (roleError || !userInfo || userInfo.role !== "doctor") {
+        router.push("/Admin"); // Redirect unauthorized users
+        return;
+      }
+
+      setUser(user);
+      setLoading(false);
+    }
+
+    checkAuth();
+  }, [router]);
+
+  if (loading) return <p>Loading...</p>;
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       {/* Header Section */}
@@ -43,7 +92,7 @@ export default async function DoctorHome() {
         <section className="bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="text-xl font-semibold mb-4 pb-2 border-b">Appointment Requests</h2>
           <ScrollArea className="h-[400px] pr-4">
-            {doctors.map((doct) => (
+            {/* {doctors.map((doct) => (
               <div key={doct.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors mb-2">
                 <div className="flex items-center gap-4">
                   <img 
@@ -73,7 +122,7 @@ export default async function DoctorHome() {
                   </Button>
                 </div>
               </div>
-            ))}
+            ))} */}
           </ScrollArea>
         </section>
 
@@ -81,7 +130,7 @@ export default async function DoctorHome() {
         <section className="bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="text-xl font-semibold mb-4 pb-2 border-b">My Patients</h2>
           <ScrollArea className="h-[400px] pr-4">
-            {doctors.map((doct) => (
+            {/* {doctors.map((doct) => (
               <div key={doct.id} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors mb-2">
                 <img 
                   src={doct.img} 
@@ -93,7 +142,7 @@ export default async function DoctorHome() {
                   <p className="text-sm text-gray-500">Last visit: 2 days ago</p>
                 </div>
               </div>
-            ))}
+            ))} */}
           </ScrollArea>
         </section>
 
@@ -101,7 +150,7 @@ export default async function DoctorHome() {
         <section className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="text-xl font-semibold mb-4 pb-2 border-b">Announcements</h2>
           <ScrollArea className="h-[300px] pr-4">
-            {doctors.map((doct) => (
+            {/* {doctors.map((doct) => (
               <div key={doct.id} className="p-4 mb-3 rounded-lg bg-blue-50 border-l-4 border-[#0089FF]">
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
@@ -111,7 +160,7 @@ export default async function DoctorHome() {
                   <span className="text-sm text-[#0089FF]">New</span>
                 </div>
               </div>
-            ))}
+            ))} */}
           </ScrollArea>
         </section>
       </div>

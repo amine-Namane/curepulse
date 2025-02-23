@@ -1,8 +1,46 @@
 'use client'
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from '@/lib/supabaseclient';
+import { useRouter } from 'next/navigation';
 
 export default function Layout({ children }) {
+ const [loading, setLoading] = useState(true);
+   const [user, setUser] = useState(null);
+   const router = useRouter();
+ 
+   useEffect(() => {
+     async function checkAuth() {
+       const { data: { user }, error } = await supabase.auth.getUser();
+       if (error || !user) {
+         router.push("/DoctorHorme"); // Redirect if not authenticated
+         return;
+       }
+ 
+       // Check if the user is a doctor
+       const { data: userInfo, error: roleError } = await supabase
+         .from("users")
+         .select("role")
+         .eq("id", user.id)
+         .single();
+ 
+       if (roleError || !userInfo || userInfo.role !== "doctor") {
+         router.push("/Admin"); // Redirect unauthorized users
+         return;
+       }
+ 
+       setUser(user);
+       setLoading(false);
+     }
+ 
+     checkAuth();
+   }, [router]);
+ 
+   if (loading) return <p>Loading...</p>;
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push('/login');}
   const [activeItem, setActiveItem] = useState("Dashboard");
   const menuItems = [
     { name: "Dashboard", icon: "🏠" },
@@ -24,6 +62,9 @@ export default function Layout({ children }) {
           <ul className="space-y-2">
             {menuItems.map((item, index) => (
               <Link 
+              onClick={()=>{
+                if(item.name==='Log out') {handleLogout}
+              }}
                 href={
                   item.name === "Dashboard" ? "/DoctorHome" :
                   item.name === "Log out" ? "/" : `/DoctorHome/${item.name}`

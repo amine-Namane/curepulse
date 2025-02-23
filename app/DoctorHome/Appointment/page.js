@@ -1,5 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react';
+import { redirect } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -19,7 +20,11 @@ async function getAppointments() {
   return res.json();
 }
 
-export default function Appointment() {
+export default async function Appointment() {
+   const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        redirect('/Admin'); // Redirect if not logged in
+      }
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

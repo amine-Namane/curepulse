@@ -1,5 +1,6 @@
 import React from "react";
-
+import { supabase } from '@/lib/supabaseclient';
+import { redirect } from 'next/navigation';
 // Updated mock data with medical professional information
 const profileData = {
   personalInfo: {
@@ -16,7 +17,11 @@ const profileData = {
   }
 };
 
-export default function DoctorProfile() {
+export default async function DoctorProfile() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect('/Admin'); // Redirect if not logged in
+  }
   return (
     <section className="w-full max-w-4xl mx-auto p-6">
       {/* Profile Header */}

@@ -1,5 +1,7 @@
 'use client'
 import React, { useState } from "react";
+import { supabase } from '@/lib/supabaseclient';
+import { redirect } from 'next/navigation';
 import {
   Sheet,
   SheetContent,
@@ -49,7 +51,11 @@ const profileData = {
   },
 };
 
-export default function Profile({params}) {
+export default async function Profile({params}) {
+   const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        redirect('/Admin'); // Redirect if not logged in
+      }
   // State for the list of diseases (initialized with mock data)
   const [diseases, setDiseases] = useState(profileData.medicalFile.diseases);
 

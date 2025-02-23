@@ -10,33 +10,21 @@
 //       : ""} />
 //   )
 // }
-import Doctorlist from '@/components/ui/Listeofdoctors';
-import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabaseclient';
+import Doctorlist from '@/components/Listeofdoctors';
+import { supabase } from '@/lib/supabaseclient';
 
-export default async function Page({ params }) {
-  // Create a Supabase client
-  const supabase = createClient();
+export default async function DoctorsPage({params}) {
+  const { data: doctors, error } = await supabase.from('doctors').select('*');
 
-  // Fetch data from Supabase "doctors" table
-  async function fetchData() {
-    const { data, error } = await supabase.from('doctors').select('*');
-
-    if (error) {
-      console.error('Error fetching data:', error);
-      return null; // Return null or handle the error as needed
-    } else {
-      console.log('Fetched data:', data);
-      return data; // Return the fetched data
-    }
+  if (error) {
+    console.error('Error fetching doctors:', error);
+    return <p>Error loading doctors</p>;
   }
-
-  const doctors = await fetchData(); // Await the fetchData call
+  console.log(doctors)
 
   return (
-    <Doctorlist
-      doctortype={params.recordtype}
-      doctors={doctors }
-    />
+    <Doctorlist doctortype={params.recordtype 
+             ? params.recordtype.charAt(0).toUpperCase() + params.recordtype.slice(1)
+             : ""} doctors={doctors} />
   );
 }

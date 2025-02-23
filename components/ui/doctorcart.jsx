@@ -18,8 +18,8 @@ export default function Doctorcart({ doct }) {
       />
 
       {/* Doctor Name and Specialization */}
-      <h2 className="font-semibold text-lg text-center">Dr. {doct.name}</h2>
-      <h2 className="text-[#A7A7A7] text-sm text-center mb-4">{doct.slug}</h2>
+      <h2 className="font-semibold text-lg text-center">{doct.name}</h2>
+      <h2 className="text-[#A7A7A7] text-sm text-center mb-4">{doct.specialty}</h2>
 
       {/* Book Now Popover */}
       <Popover>

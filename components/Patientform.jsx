@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import CustemForm from "./CustemForm";
+import CustemForm from './custemForm';
 import {
   Form,
   FormControl,
@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState } from 'react';
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseclient";
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
@@ -29,9 +30,27 @@ const formSchema = z.object({
 });
 
 export function PatientForm() {
+  // const router = useRouter();
+  // const [phoneValue, setPhoneValue] = useState();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
   const router = useRouter();
-  const [phoneValue, setPhoneValue] = useState();
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError(null);
 
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      console.log("User logged in:", data.user);
+      router.push("/dashboard"); // Redirect to the patient dashboard
+    }};
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -71,44 +90,24 @@ export function PatientForm() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <CustemForm
-              control={form.control}
-              name="user"
-              label="Username"
-              classlabel="text-gray-700 font-medium"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-
-            <CustemForm
+          <CustemForm
+          setEmail={setEmail}
               control={form.control}
               name="email"
               label="Email"
+              type='email'
               classlabel="text-gray-700 font-medium"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-
-            <FormField
+             <CustemForm
+             setPassword={setPassword}
               control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">
-                    Phone Number
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <img
-                        src="/assets/icons/phone.svg"
-                        alt="Phone icon"
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage className="text-red-500 text-sm" />
-                </FormItem>
-              )}
+              name="password"
+              label="password"
+              type="password"
+              classlabel="text-gray-700 font-medium"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-
             <Button 
               type="submit" 
               className="w-full py-6 bg-blue-600 hover:bg-blue-700 text-lg font-semibold rounded-lg transition-colors duration-200"
@@ -155,3 +154,4 @@ export function PatientForm() {
     </div>
   );
 }
+
