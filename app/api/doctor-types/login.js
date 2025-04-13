@@ -68,5 +68,4 @@ const testCategories = {
       aptt: { name: "Activated Partial Thromboplastin Time (aPTT)", min: 25, max: 35, unit: "seconds" },
     },
   },
-};
-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 
+}
