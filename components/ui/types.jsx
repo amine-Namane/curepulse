@@ -10,8 +10,16 @@ async function getDoctorTypes() {
   return res.json();
 }
 
-export default async function Custemsidebar() {
+export default  async function Custemsidebar() {
   const types = await getDoctorTypes();
+  // const types = [
+  //   { name: 'dentist', slug: 'Dentist' },
+  //   { name: 'cardiologist', slug: 'Cardiologist' },
+  //   { name: 'orthopedic', slug: 'Orthopedic' },
+  //   { name: 'otology', slug: 'Otology' },
+  //   { name: 'doctor', slug: 'Doctor' },
+  //   { name: 'eyedoctor', slug: 'Eyedoctor' },
+  // ];
 
   return (
     <aside className="w-64 bg-white shadow-lg border-r border-gray-100">

@@ -1,7 +1,9 @@
 'use client'
-import React, { useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { supabase } from '@/lib/supabaseclient';
+import { useRouter } from "next/navigation";
 import { redirect } from 'next/navigation';
+
 import {
   Sheet,
   SheetContent,
@@ -51,11 +53,24 @@ const profileData = {
   },
 };
 
-export default async function Profile({params}) {
-   const { data: { user } } = await supabase.auth.getUser();
+export default  function Profile({params}) {
+  const resolvedParams = use(params); // Unwrap the promise
+  const patientId = resolvedParams.recordid;
+
+  console.log(patientId);
+  const router = useRouter();
+  useEffect(() => { 
+    const checkAuthAndFetchAppointments = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       if (!user) {
-        redirect('/Admin'); // Redirect if not logged in
+        router.push("/Admin"); // Redirect if not logged in
+        return;
       }
+    };
+
+    checkAuthAndFetchAppointments();
+  }, []);
   // State for the list of diseases (initialized with mock data)
   const [diseases, setDiseases] = useState(profileData.medicalFile.diseases);
 
@@ -279,4 +294,4 @@ export default async function Profile({params}) {
       </div>
     </section>
   );
-}
+}  

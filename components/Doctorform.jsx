@@ -1,4 +1,3 @@
-
 // "use client";
 // import 'react-phone-number-input/style.css'
 // import PhoneInput from 'react-phone-number-input'
@@ -118,57 +117,64 @@ const formSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
-export function DoctorForm() {
+export  function DoctorForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
+  const [error, setError] = useState(null); // Uncomment this line
+  
   const form = useForm({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
-
+  
   async function onSubmit(values) {
-    setLoading(true);
-    setError(null);
-
     try {
-      // Authenticate user
+      // 1. Authenticate user
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: values.email,
-        password: values.password,
+        password: values.password
       });
-
+  
       if (authError) throw authError;
-
-      // Fetch user role from profile
-      const { data: userData, error: userError } = await supabase
+  
+      // 2. Get doctor profile (corrected table/column)
+      const { data: doctorData, error: profileError } = await supabase
         .from('doctors')
-        .select('role')
-        .eq('id', authData.user.id)
+        .select('*')
+        .eq('user_id', authData.user.id) // Match auth user ID
         .single();
+  
 
-      if (userError) throw userError;
-
-      // Verify doctor role
-      if (userData.role !== 'doctor') {
+        
+      //3. Handle missing profile
+      if (!doctorData) {
         await supabase.auth.signOut();
-        throw new Error('Access restricted to authorized medical staff.');
+        throw new Error('No doctor profile found');
       }
-
-      // Redirect to doctor dashboard
-      router.push("/DoctorHome");
+  
+      // // 4. Verify role
+      // if (doctorData.role !== 'doctor') {
+      //   await supabase.auth.signOut();
+      //   throw new Error('Access restricted to medical staff');
+      // }
+  
+      // 5. Redirect to dashboard
+      router.push('/DoctorHome');
+      
     } catch (error) {
-      setError(error.message === 'Invalid login credentials' 
-        ? "Incorrect email or password." 
-        : error.message);
-    } finally {
-      setLoading(false);
+      setError(error.message);
     }
   }
+  // async function onSubmit(values) {
+  // const { data, error } = await supabase.auth.signInWithPassword({ email:values.email, password:values.password });
+  
+  // if (error) {
+  //   console.error('Login error:', error.message);
+  //   // Display error message to the user
+  // } else {
+  //   console.log('Login successful!', data.user);
+  //   // Redirect the doctor to their dashboard or load profile data
+  // }}
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -255,3 +261,24 @@ export function DoctorForm() {
     </div>
   );
 }
+// "use client";
+// import { useEffect } from "react";
+// import { supabase } from "@/lib/supabaseclient";
+
+// export  function DoctorForm() {
+//   useEffect(() => {
+//     async function testAuth() {
+//       const { data, error } = await supabase.auth.signInWithPassword({
+//         email: "aminenamane258@gmail.com",
+//         password: "aminenamane258@gmail.com"
+//       });
+//       console.log("Auth Data:", data, "Error:", error);
+//     }
+//     testAuth();
+//   }, []);
+
+//   return <div>Testing Supabase Auth</div>;
+// }
+
+
+

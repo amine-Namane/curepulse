@@ -1,7 +1,7 @@
 "use client";
-import 'react-phone-number-input/style.css'
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import 'react-phone-number-input/style.css';
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import PhoneInput from 'react-phone-number-input'
+import PhoneInput from 'react-phone-number-input';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -27,7 +27,10 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { DatePickerDemo } from './Datepicker';
 import { useState } from 'react';
+import { supabase } from '@/lib/supabaseclient';
+import { useRouter } from 'next/navigation';
 
+// Form schema for validation
 const formSchema = z.object({
   username: z.string()
     .min(2, "Username must be at least 2 characters")
@@ -45,7 +48,7 @@ const formSchema = z.object({
   address: z.object({
     street: z.string().min(2),
     city: z.string().min(2),
-    postalCode: z.string().min(4)
+    postalCode: z.string().min(4),
   }),
   medicalInfo: z.object({
     bloodType: z.string().optional(),
@@ -59,6 +62,10 @@ const formSchema = z.object({
 
 export function PatientSignup() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
+
+  // Initialize the form
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -73,7 +80,7 @@ export function PatientSignup() {
       address: {
         street: "",
         city: "",
-        postalCode: ""
+        postalCode: "",
       },
       medicalInfo: {
         bloodType: "",
@@ -81,26 +88,127 @@ export function PatientSignup() {
         medicalConditions: "",
         currentMedications: "",
         insuranceProvider: "",
-        insurancePolicyNumber: ""
-      }
-    }
+        insurancePolicyNumber: "",
+      },
+    },
   });
 
-  async function onSubmit(values) {
-    setLoading(true);
-    try {
-      // Replace with actual API call
-      console.log(values);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert("Registration successful!");
-      form.reset();
-    } catch (error) {
-      console.error("Registration failed:", error);
-      alert("Registration failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  // Handle form submission
+//   const handleSignup = async (values) => {
+//     setLoading(true);
+//     setError('');
+
+//     try {
+//       // Step 1: Sign up the user with Supabase authentication
+//       const { data: authData, error: authError } = await supabase.auth.signUp({
+//         email: values.email,
+//         password: values.password,
+//       });
+
+//       if (authError) {
+//         throw authError;
+//       }
+
+//       const userId = authData?.user?.id;
+//       const { data: user, error } = await supabase.auth.getUser();
+
+//       if (error || !user) {
+//         console.error("User is not authenticated:", error);
+//       } else {
+//         console.log("Authenticated user ID:", user.id);
+//       }
+      
+//       // Step 2: Store additional patient details in the `patients` table
+//   //      if (userId) {
+//   //        const { error: insertError } = await supabase.from('patients').insert([
+//   //          {
+//   //            user_id: userId, // Use the user ID from authentication
+//   //            name: values.username, // Map 'username' to 'name'
+//   //            email: values.email,
+//   //            phone: values.phone,
+//   //            gender: values.gender,
+//   //            birth_day: values.birthDate, // Map 'birthDate' to 'birth_date'
+//   //            // emergency_contact_name: values.emergencyContactName, // Map 'emergencyContactName' to 'emergency_contact_name'
+//   //            emergencyContact: values.emergencyContactPhone, // Map 'emergencyContactPhone' to 'emergency_contact_phone'
+//   //            adress: `${values.address.street}, ${values.address.city}, ${values.address.postalCode}`, // Combine address fields
+//   //            blood_type: values.medicalInfo.bloodType || null,
+//   //            allergies: values.medicalInfo.allergies || null,
+//   //            medicalConditions: values.medicalInfo.medicalConditions || null,
+//   // //           // medicalConditions: values.medicalInfo.currentMedications || null,
+//   // //           // insurance_provider: values.medicalInfo.insuranceProvider || null,
+//   // //           // insurance_policy_number: values.medicalInfo.insurancePolicyNumber || null,
+//   //            role:'patient'
+//   //          },
+//   //        ]);
+
+//   //        if (insertError) {
+//   //          throw insertError;
+//   //        }
+//   //      }
+
+//   //      alert('Registration successful! Check your email for verification.');
+//   //      router.push('/Patient'); // Redirect to the patient dashboard or login page
+// } catch (error) {
+//   setError(error.message);
+// } finally {
+//   setLoading(false);
+//  }
+
+// }
+
+async function addUserWithProfile(values) {
+  try {
+    // Sign up the user
+    const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+      email: values.email,
+      password: values.password,
+    });
+  
+    if (signUpError) throw signUpError;
+  
+    // Sign in the user immediately after sign-up
+    const { data: { session }, error: signInError } = await supabase.auth.signInWithPassword({
+      email: values.email,
+      password: values.password,
+    });
+  
+    if (signInError) throw signInError;
+  
+    // Insert patient data
+    const { error: profileError } = await supabase.from("patients").insert([
+      {
+        user_id: user.id,
+        name: values.username,
+        email: values.email,
+        phone: values.phone,
+        gender: values.gender,
+        birth_day: values.birthDate,
+        //emergency_contact_name: values.emergencyContactName, // Fixed field name
+        emergencyContact: values.emergencyContactPhone, // Fixed field name
+        adress: values.address.street,
+        // ${values.address.city}, ${values.address.postalCode},
+        blood_type: values.medicalInfo?.bloodType || null,
+        allergies: values.medicalInfo?.allergies || null,
+        medicalConditions: values.medicalInfo?.medicalConditions || null, // Fixed field name
+       // current_medications: values.medicalInfo?.currentMedications || null, // Fixed field name
+      //  insurance_provider: values.medicalInfo?.insuranceProvider || null, // Fixed field name
+       // insurance_policy_number: values.medicalInfo?.insurancePolicyNumber || null, // Fixed field name
+        role: "patient"
+      }
+    ]);
+console.log(user.id ,user.email);
+    if (profileError) throw profileError;
+
+    alert('Registration successful! Check your email for verification.');
+    router.push('/Patient');
+  } catch (error) {
+    setError(error.message);
+  } finally {
+    setLoading(false);
   }
+}
+
+
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -114,9 +222,9 @@ export function PatientSignup() {
             </Link>
           </p>
         </header>
-
+        {error && <p className="text-red-500 text-center">{error}</p>}
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(addUserWithProfile)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Personal Information */}
               <div className="space-y-4">
@@ -126,14 +234,12 @@ export function PatientSignup() {
                   label="Username"
                   className="rounded-lg"
                 />
-                
                 <CustemForm
                   control={form.control}
                   name="email"
                   label="Email"
                   className="rounded-lg"
                 />
-                
                 <CustemForm
                   control={form.control}
                   name="password"
@@ -179,7 +285,6 @@ export function PatientSignup() {
                           {[
                             { value: "male", label: "Male" },
                             { value: "female", label: "Female" },
-                            { value: "other", label: "Other" }
                           ].map((option) => (
                             <div key={option.value} className="flex items-center space-x-2">
                               <RadioGroupItem value={option.value} id={option.value} />
@@ -219,7 +324,6 @@ export function PatientSignup() {
                   label="Emergency Contact Name"
                   className="rounded-lg"
                 />
-                
                 <FormField
                   control={form.control}
                   name="emergencyContactPhone"
@@ -248,15 +352,18 @@ export function PatientSignup() {
                   label="Street Address"
                   className="rounded-lg"
                 />
-                
                 <CustemForm
                   control={form.control}
                   name="address.city"
                   label="City"
                   className="rounded-lg"
                 />
-                
-                
+                <CustemForm
+                  control={form.control}
+                  name="address.postalCode"
+                  label="Postal Code"
+                  className="rounded-lg"
+                />
               </div>
 
               {/* Medical Information */}
@@ -264,7 +371,6 @@ export function PatientSignup() {
                 <h3 className="text-xl font-semibold text-[#0089FF] border-b pb-2">
                   Medical Information (Optional)
                 </h3>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -296,8 +402,8 @@ export function PatientSignup() {
                       <FormItem>
                         <FormLabel>Allergies</FormLabel>
                         <FormControl>
-                          <Input 
-                            {...field} 
+                          <Input
+                            {...field}
                             placeholder="e.g., Penicillin, Pollen"
                             className="rounded-lg"
                           />
@@ -397,3 +503,10 @@ export function PatientSignup() {
     </div>
   );
 }
+
+
+
+
+
+
+

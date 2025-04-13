@@ -1,6 +1,8 @@
 'use client'
 import React, { useEffect, useState } from 'react';
 import { redirect } from 'next/navigation';
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseclient";
 import {
   Table,
   TableBody,
@@ -19,18 +21,21 @@ async function getAppointments() {
   }
   return res.json();
 }
-
-export default async function Appointment() {
-   const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        redirect('/Admin'); // Redirect if not logged in
-      }
+export default function Appointment() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const checkAuthAndFetchAppointments = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        router.push("/Admin"); // Redirect if not logged in
+        return;
+      }
+
       try {
         const data = await getAppointments();
         setAppointments(data);
@@ -40,18 +45,13 @@ export default async function Appointment() {
         setLoading(false);
       }
     };
-    
-    fetchData();
+
+    checkAuthAndFetchAppointments();
   }, []);
 
   if (error) {
-    return (
-      <div className="p-6 text-red-500">
-        Error loading appointments: {error}
-      </div>
-    );
+    return <div className="p-6 text-red-500">Error loading appointments: {error}</div>;
   }
-
   return (
     <div className="p-6">
       <Table className="border rounded-lg">

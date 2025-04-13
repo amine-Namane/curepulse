@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import React from 'react';
 
 export default function MainHeader({ h1, p, button, button2 }) {
@@ -9,7 +10,7 @@ export default function MainHeader({ h1, p, button, button2 }) {
       />
       <p className="mt-2 text-[#A7A7A7]">{p}</p>
       <div className=" text-start mt-5 ">
-        <button className="bg-blue-500 text-white px-4 py-2 mr-2 rounded-full shadow-lg">{button}</button>
+        <Link href="/Booking" className="bg-blue-500 text-white px-4 py-2 mr-2 rounded-full shadow-lg">{button}</Link>
         {/* {button2 && (
           <button className=" px-4 py-2">{button2}</button>
         )} */}

@@ -1,52 +1,37 @@
-'use client'
+"use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { supabase } from '@/lib/supabaseclient';
-import { useRouter } from 'next/navigation';
-
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseclient";
+import { getAuthenticatedUser } from "@/lib/auth"; // Import auth function
 export default function Layout({ children }) {
- const [loading, setLoading] = useState(true);
-   const [user, setUser] = useState(null);
-   const router = useRouter();
- 
-   useEffect(() => {
-     async function checkAuth() {
-       const { data: { user }, error } = await supabase.auth.getUser();
-       if (error || !user) {
-         router.push("/DoctorHorme"); // Redirect if not authenticated
-         return;
-       }
- 
-       // Check if the user is a doctor
-       const { data: userInfo, error: roleError } = await supabase
-         .from("users")
-         .select("role")
-         .eq("id", user.id)
-         .single();
- 
-       if (roleError || !userInfo || userInfo.role !== "doctor") {
-         router.push("/Admin"); // Redirect unauthorized users
-         return;
-       }
- 
-       setUser(user);
-       setLoading(false);
-     }
- 
-     checkAuth();
-   }, [router]);
- 
-   if (loading) return <p>Loading...</p>;
-
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push('/login');}
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [activeItem, setActiveItem] = useState("Dashboard");
+  const router = useRouter();
+  useEffect(() => {
+     function checkAuth() {
+      const user =  getAuthenticatedUser(); // Use the server function
+      if (!user) {
+        router.push("/DoctorHome"); // Redirect if not authenticated
+        return;
+      }
+      setUser(user);
+      setLoading(false);
+    }
+
+    checkAuth();
+  }, [router]);
+  if (loading) return <p>Loading...</p>;
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/Doctorsingin');
+  };
   const menuItems = [
     { name: "Dashboard", icon: "🏠" },
     { name: "Profile", icon: "👤" },
     { name: "Appointment", icon: "📅" },
-    { name: "Log out", icon: "🚪" }
+    { name: "Log out", icon: "🚪" },
   ];
 
   return (
@@ -58,22 +43,23 @@ export default function Layout({ children }) {
             <h1 className="text-2xl font-bold text-blue-600">HealthCare</h1>
             <p className="text-sm text-gray-500">Doctor Portal</p>
           </div>
-          
           <ul className="space-y-2">
             {menuItems.map((item, index) => (
-              <Link 
-              onClick={()=>{
-                if(item.name==='Log out') {handleLogout}
-              }}
-                href={
-                  item.name === "Dashboard" ? "/DoctorHome" :
-                  item.name === "Log out" ? "/" : `/DoctorHome/${item.name}`
-                }
+              <Link
                 key={index}
+                href={
+                  item.name === "Dashboard"
+                    ? "/DoctorHome"
+                    : item.name === "Log out"
+                    ? "/"
+                    : `/DoctorHome/${item.name}`
+                }
               >
                 <li
-                key={index}
-                  onClick={() => setActiveItem(item.name)}
+                  onClick={() => {
+                    if (item.name === "Log out") handleLogout();
+                    setActiveItem(item.name);
+                  }}
                   className={`group flex items-center px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer
                     ${
                       activeItem === item.name
@@ -92,7 +78,7 @@ export default function Layout({ children }) {
                     {item.name}
                   </span>
                 </li>
-               </Link>
+              </Link>
             ))}
           </ul>
         </nav>

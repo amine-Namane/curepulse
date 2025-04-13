@@ -1,6 +1,8 @@
-import React from "react";
+'use client'
+import React, { useEffect, useState } from "react";
 import { supabase } from '@/lib/supabaseclient';
 import { redirect } from 'next/navigation';
+import { useRouter } from "next/navigation";
 // Updated mock data with medical professional information
 const profileData = {
   personalInfo: {
@@ -17,11 +19,55 @@ const profileData = {
   }
 };
 
-export default async function DoctorProfile() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect('/Admin'); // Redirect if not logged in
+export default  function DoctorProfile() {
+  const router = useRouter();
+const [doctor, setDoctor] = useState(null);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const checkAuthAndFetchAppointments = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push("/Admin"); // Redirect if not logged in
+      return;
+    }
+
+    try {
+      // Fetch doctor info
+      const { data: userInfo, error: roleError } = await supabase
+        .from("doctors")
+        .select("*")
+        .eq("user_id", user.id) // Ensure 'user_id' is correct
+        .single();
+
+      if (roleError) throw roleError; // Handle error if any
+
+      setDoctor(userInfo);
+    } catch (error) {
+      console.error("Error fetching doctor info:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  checkAuthAndFetchAppointments();
+}, [router]); // Add router dependency
+
+// Log the updated doctor state
+useEffect(() => {
+  if (doctor) {
+    console.log("Updated doctor state:", doctor);
   }
+}, [doctor]);
+
+if (loading) {
+  return <p>Loading...</p>; // Show a loading message
+}
+if (!doctor) {
+  return <p>No doctor data available.</p>; // Handle case when there's no data
+}
+
   return (
     <section className="w-full max-w-4xl mx-auto p-6">
       {/* Profile Header */}
@@ -33,10 +79,10 @@ export default async function DoctorProfile() {
         />
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {profileData.personalInfo.fullName}
+            {doctor.name}
           </h1>
           <p className="text-lg text-[#0089FF] font-semibold">
-            {profileData.personalInfo.specialization}
+            {doctor.specialty}
           </p>
           <p className="text-sm text-gray-500 mt-1">
             {profileData.personalInfo.affiliation}
@@ -55,7 +101,7 @@ export default async function DoctorProfile() {
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Experience</span>
               <span className="text-gray-900 font-medium">
-                {profileData.personalInfo.experience}
+                {doctor.experiance} years
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -82,13 +128,13 @@ export default async function DoctorProfile() {
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Phone</span>
               <span className="text-gray-900">
-                {profileData.personalInfo.phoneNumber}
+                +213{doctor.phone}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Email</span>
               <span className="text-gray-900 break-all">
-                {profileData.personalInfo.email}
+                {doctor.email}
               </span>
             </div>
             <div className="flex justify-between items-center py-2">

@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { supabase } from '@/lib/supabaseclient';
 import { redirect } from 'next/navigation';
 import { useRouter } from "next/navigation"
+import { getAuthenticatedUser } from "@/lib/auth"; // Import auth function
 
 // async function getDoctorlist() {
 //   const res = await fetch('http://localhost:3000/api/doctors-list');
@@ -15,7 +16,7 @@ import { useRouter } from "next/navigation"
 //   return res.json();
 // }
 
-export default async function DoctorHome() {
+export default  function DoctorHome() {
   // const doctors = await getDoctorlist()
   // const { data: { user } } = await supabase.auth.getUser();
   // if (!user) {
@@ -32,20 +33,22 @@ export default async function DoctorHome() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const router = useRouter();
-
   useEffect(() => {
     async function checkAuth() {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      console.log("User ID:", user?.id);
-      if (error || !user) {
-        router.push("/DoctorHorme"); // Redirect if not authenticated
-        return;
-      }
+    const user = await getAuthenticatedUser(); // Use the server function
+         if (!user) {
+           router.push("/DoctorHome"); // Redirect if not authenticated
+           return;
+         }
+         setUser(user);
+         setLoading(false);
+
+
 
       // Check if the user is a doctor
       const { data: userInfo, error: roleError } = await supabase
-        .from("users")
-        .select("role")
+        .from("doctors")
+        .select("*")
         .eq("user_id", user.id) // Change 'id' to correct column name
         .single();
 
@@ -53,14 +56,14 @@ export default async function DoctorHome() {
         router.push("/Admin"); // Redirect unauthorized users
         return;
       }
-
-      setUser(user);
+      console.log(userInfo)
+      setUser(userInfo);
       setLoading(false);
     }
 
     checkAuth();
   }, [router]);
-
+console.log(user)
   if (loading) return <p>Loading...</p>;
 
   return (
@@ -69,7 +72,7 @@ export default async function DoctorHome() {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 max-w-7xl mx-auto">
         <div className="mb-4 md:mb-0">
           <h1 className='text-3xl font-semibold'>
-            Welcome, <span className="text-[#0089FF]">Dr. Smith</span>
+            Welcome, <span className="text-[#0089FF]">{user.name}</span>
           </h1>
           <p className="text-gray-600 mt-1">Today's schedule overview</p>
         </div>
