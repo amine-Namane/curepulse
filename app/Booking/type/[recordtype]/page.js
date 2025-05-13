@@ -34,7 +34,7 @@ export default function DoctorsPage({ params: paramsPromise }) {
       }
 
       // Fetch doctors data
-      const { data: doctors, error } = await supabase.from("doctors").select("*");
+      const { data: doctors, error } = await supabase.from("doctor").select("*");
       if (error) {
         console.error("Error fetching doctors:", error);
       } else {

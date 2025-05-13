@@ -152,11 +152,13 @@
 // export default ChatComponent;
 
 'use client'
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { BeakerIcon, HeartIcon, ChartBarIcon, ClockIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+ import { supabase } from "@/lib/supabaseclient";
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 import OpenAI from "openai";
+import { useRouter } from "next/navigation";
 const endpoint = process.env.NEXT_PUBLIC_AZURE_ENDPOINT || "https://models.inference.ai.azure.com";
 const apiKey = process.env.NEXT_PUBLIC_OPENAI_KEY; 
 const apiKey2 = process.env.NEXT_PUBLIC_AZURE_KEY_2; 
@@ -169,8 +171,11 @@ export default function Home() {
   const [history, setHistory] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [user ,SetUser]=useState(null)
+
   //to add to doctors page (add to supabase tablle of patient suggest doctor)
   const[doctors,setDoctors]=useState([])
+  const router = useRouter();
   const testCategories = {
     "cbc": {
       name: "Complete Blood Count (CBC)",
@@ -241,133 +246,261 @@ export default function Home() {
         aptt: { name: "Activated Partial Thromboplastin Time (aPTT)", min: 25, max: 35, unit: "seconds" },
       },
     },
+    "infectious": {
+      name: "Infectious Disease Panel",
+      tests: {
+        hiv_viral_load: { name: "HIV Viral Load", min: 0, max: 20, unit: "copies/mL" },
+        cd4_count: { name: "CD4 Count", min: 500, max: 1500, unit: "cells/μL" },
+        hbsag: { name: "Hepatitis B Surface Antigen (HBsAg)", min: 0, max: 0.05, unit: "IU/mL" },
+        anti_hcv: { name: "Anti-HCV Antibody", min: 0, max: 1, unit: "signal/cutoff" },
+      },
+    },
+    "hormonal": {
+      name: "Hormonal Panel",
+      tests: {
+        fsh: { name: "Follicle-Stimulating Hormone (FSH)", min: 1.5, max: 12.4, unit: "mIU/mL" },
+        lh: { name: "Luteinizing Hormone (LH)", min: 1.7, max: 8.6, unit: "mIU/mL" },
+        estradiol: { name: "Estradiol", min: 15, max: 350, unit: "pg/mL" },
+        testosterone: { name: "Testosterone", min: 300, max: 1000, unit: "ng/dL" },
+      },
+    },
+    "cardiac": {
+      name: "Cardiac Markers",
+      tests: {
+        troponin: { name: "Troponin I", min: 0, max: 0.04, unit: "ng/mL" },
+        bnp: { name: "B-type Natriuretic Peptide (BNP)", min: 0, max: 100, unit: "pg/mL" },
+        ck_mb: { name: "Creatine Kinase-MB (CK-MB)", min: 0, max: 5, unit: "ng/mL" },
+      },
+    },
+    "autoimmune": {
+      name: "Autoimmune Panel",
+      tests: {
+        ana: { name: "Antinuclear Antibody (ANA)", min: 0, max: 1, unit: "titer" },
+        rf: { name: "Rheumatoid Factor (RF)", min: 0, max: 14, unit: "IU/mL" },
+        crp: { name: "C-Reactive Protein (CRP)", min: 0, max: 10, unit: "mg/L" },
+        esr: { name: "Erythrocyte Sedimentation Rate (ESR)", min: 0, max: 20, unit: "mm/hr" },
+      },
+    },
+    "urinalysis": {
+      name: "Urinalysis",
+      tests: {
+        urine_ph: { name: "Urine pH", min: 4.5, max: 8, unit: "pH" },
+        urine_glucose: { name: "Urine Glucose", min: 0, max: 0, unit: "mg/dL" },
+        urine_protein: { name: "Urine Protein", min: 0, max: 150, unit: "mg/day" },
+        urine_rbc: { name: "Urine RBCs", min: 0, max: 3, unit: "cells/HPF" },
+      },
+  }
+}
+useEffect(() => {
+  const checkAuthAndFetchAppointments = async () => {
+    const { data: { user },error  } = await supabase.auth.getUser(); 
+    if (!user) {
+      router.push("/Patient"); // Redirect if not logged in
+      return;
+    }else{
+      SetUser(user)
+      console.log(user)
+    }
   };
-  
 
-  const handleChange = (e) => {
-    setValues({ ...values, [e.target.name]: e.target.value });
-  }; 
-  const analyze = async () => {
-    if (!selectedTestCategory) {
-      setError("Please select a test category before analyzing.");
-      return;
-    }
-  
-    if (!apiKey) {
-      setError("API key is missing! Set NEXT_PUBLIC_AZURE_KEY in .env.local.");
-      return;
-    }
-  
-    setLoading(true);
-    setError(null);
-    setResult(null);
-  
-    const selectedTests = testCategories[selectedTestCategory].tests;
-    let formattedResults = Object.keys(values)
-      .map((key) => {
-        const test = selectedTests[key];
-        return `${test.name}: ${values[key]} ${test.unit}`;
-      })
-      .join("\n");
-  
-    const prompt = `
-    ---
-    
-    ### **1. Test Analysis**  
-    - **For each value:**  
-      - **Status:** Clearly state *High/Normal/Low* in **bold**. (and display 🔴 for low, 🟠 for high, 🟢 for normal)  
-      - **Biological Reason:** One concise phrase (≤15 words) explaining the mechanism or clinical relevance.  
-    - **Example Format:**  
-      - Hemoglobin: **High** 🟠. Chronic hypoxia stimulates erythropoietin production.  
-    
-    ---
-    
-    ### **2. Potential Diagnoses**  
-    - **Criteria:** Only list conditions **directly linked to ALL abnormal values combined**.  
-    - **Prioritization:** Rank **top 3** most likely diagnoses (use medical terminology).  
-      - Include a brief rationale (1 sentence) linking abnormal results to each diagnosis.  
-    - **Example:**  
-      1. **Polycythemia Vera** – Elevated hemoglobin and hematocrit with JAK2 mutation association.  
-    
-    ---
-    
-    ### **3. Recommended Specialists**  
-    - **Specificity:** Name **subspecialists** (e.g., *Hematologist*, not "doctor").  
-    - **Alignment:** Pair each specialist with a corresponding diagnosis from Section 2.  
-    - **Example:**  
-      - **Hematologist**: Further evaluate suspected polycythemia vera.  
-    
-    ---
-    
-    **Lab Results:**  
-     \n\n${formattedResults}\n\n 
-    
-    ---
-    **Response Guidelines:**  
-    - Use clear headings, bullet points, and bold keywords for readability.  
-    - Avoid redundant explanations or general statements.  
-    - Prioritize abnormalities first, then normal values.  
-    `
+  checkAuthAndFetchAppointments();
+}, []);
+const handleChange = (e) => {
+setValues({ ...values, [e.target.name]: e.target.value });
+}; 
+const analyze = async () => {
+if (!selectedTestCategory) {
+setError("Please select a test category before analyzing.");
+return;
+}
 
-    try {
-      const client = new OpenAI({
-        baseURL: "https://models.inference.ai.azure.com",
-        apiKey: apiKey,
-        dangerouslyAllowBrowser: true, // Required to use OpenAI in the browser
-      });
-  
-      const response = await client.chat.completions.create({
-        messages: [
-          { role: "system", content: "You are a medical expert providing test analysis." },
-          { role: "user", content: prompt },
-        ],
-        model: "gpt-4o",
-        temperature: 1,
-        max_tokens: 4096,
-        top_p: 1,
-      });
-      let aiResponse = response.choices[0].message.content;
+if (!apiKey) {
+setError("API key is missing! Set NEXT_PUBLIC_AZURE_KEY in .env.local.");
+return;
+}
+
+setLoading(true);
+setError(null);
+setResult(null);
+
+const selectedTests = testCategories[selectedTestCategory].tests;
+let formattedResults = Object.keys(values)
+.map((key) => {
+  const test = selectedTests[key];
+  return `${test.name}: ${values[key]} ${test.unit}`;
+})
+.join("\n");
+
+const prompt = `
+---
+
+### **1. Test Analysis**  
+- **For each value:**  
+- **Status:** Clearly state *High/Normal/Low* in **bold**. (and display 🔴 for low, 🟠 for high, 🟢 for normal)  
+- **Biological Reason:** One concise phrase (≤15 words) explaining the mechanism or clinical relevance.  
+- **Example Format:**  
+- Hemoglobin: **High** 🟠. Chronic hypoxia stimulates erythropoietin production.  
+
+---
+
+### **2. Potential Diagnoses**  
+- **Criteria:** Only list conditions **directly linked to ALL abnormal values combined**.  
+- **Prioritization:** Rank **top 3** most likely diagnoses (use medical terminology).  
+- Include a brief rationale (1 sentence) linking abnormal results to each diagnosis.  
+- **Example:**  
+1. **Polycythemia Vera** – Elevated hemoglobin and hematocrit with JAK2 mutation association.  
+
+---
+
+### **3. Recommended Specialists**  
+- **Specificity:** Name **subspecialists** (e.g., *Hematologist*, not "doctor").  
+- **Alignment:** Pair each specialist with a corresponding diagnosis from Section 2.  
+- **Example:**  
+- **Hematologist**: Further evaluate suspected polycythemia vera.  
+
+---
+
+**Lab Results:**  
+\n\n${formattedResults}\n\n 
+
+---
+**Response Guidelines:**  
+- Use clear headings, bullet points, and bold keywords for readability.  
+- Avoid redundant explanations or general statements.  
+- Prioritize abnormalities first, then normal values.  
+`
+
+try {
+const client = new OpenAI({
+  baseURL: "https://models.inference.ai.azure.com",
+  apiKey: apiKey,
+  dangerouslyAllowBrowser: true, // Required to use OpenAI in the browser
+});
+
+const response = await client.chat.completions.create({
+  messages: [
+    { role: "system", content: "You are a medical expert providing test analysis." },
+    { role: "user", content: prompt },
+  ],
+  model: "gpt-4o",
+  temperature: 1,
+  max_tokens: 4096,
+  top_p: 1,
+});
+let aiResponse = response.choices[0].message.content;
 
 // Remove stars and hashes, trim
 aiResponse = aiResponse.replace(/\*\*/g, "").replace(/#/g, "").trim();
 
 // Extract "Doctors to consult" section
 let doctorsList = [];
+let doctorNames = [];
 const sections = aiResponse.split("\n\n");
-
+console.log(sections)
 for (const section of sections) {
-  const lines = section.split("\n");
-  if (lines.length === 0) continue;
-  
-  // Check first line for section identifier
-  const firstLine = lines[0].trim();
-  if (firstLine.startsWith("3) Doctors to consult") || 
-     firstLine.startsWith("Doctors to consult")) {
-    doctorsList = lines.slice(1)
-      .map(line => line.replace(/^-\s*/, "").trim())
-      .filter(line => line);
-    break;
-  }
+const lines = section.split("\n");
+for (const line of sections) {
+console.log('line',line)
+    const match = line.match(/-\s*([A-Za-z\s]+?ist)\b/); // match words ending in 'ist'
+    if (match) {
+      doctorNames.push(match[1].trim());
+    }
 }
-doctorsList = doctorsList.map(doctor => {
-  // Remove any parenthetical explanations, hyphens, or special characters
-  return doctor
-    .split(/[(\-:]/)[0]    // Split on first parenthesis, hyphen, or colon
-    .replace(/^[\d.]+/, "") // Remove leading numbers (e.g., "1. ")
-    .trim();
-});
-console.log("Identified doctors:", doctorsList);
-setDoctors(doctorsList);
+console.log("doctornames:", doctorNames);
+console.log(user);
+setDoctors(doctorNames);
 setResult(aiResponse);
 
-    } catch (err) {
-      console.error("API Error:", err);
-      setError("Error analyzing test results.");
-    } finally {
-      setLoading(false);
-    }
-  };
+// ✅ Save doctor list to patient account
+try {
+  const { data: patientData, error: fetchError } = await supabase
+    .from('patients')
+    .select('doctor_list')
+    .eq('user_id', user.id)
+    .single();
+    console.log(user.id ,  patientData);
+  if (fetchError) {
+    console.error("Error fetching data:", fetchError);
+    return;
+  }
+console.log(patientData.doctor_list)
+  const currentDoctors = patientData?.doctor_list || [];
+  const mergedDoctors = [...currentDoctors, ...doctors];
+  const uniqueDoctors = [...new Set(mergedDoctors)];
+console.log(mergedDoctors)
+  const { error: updateError } = await supabase
+    .from('patients')
+    .update({ doctor_list: uniqueDoctors })
+    .eq('user_id', user.id);
+
+  if (updateError) {
+    console.error('Supabase save error:', updateError);
+  } else {
+    console.log('✅ Saved doctors:', uniqueDoctors);
+  }
+} catch (err) {
+  console.error('Saving failed:', err);
+}
+
+// try { 
+//   const { data: { user }, error: authError } = await supabase.auth.getUser();
+//   console.log("saveDoctors: starting..."); 
+//   if (authError || !user) {
+//     console.error("Auth error:", authError?.message || "No user");
+//     return;
+//   }
+//   console.log("saveDoctors: starting..."); 
+//   // if (!doctors || doctors.length === 0) {
+//   //   console.warn("Empty doctors list - aborting save");
+//   //   return;
+//   // }
+//   // Fetch the existing patient record
+//   const { data: patientData, error: fetchError } = await supabase
+//     .from('patients')
+//     .select('doctors_list') // Ensure the column name matches your database!
+//     .eq('user_id', user.id)
+//     .single(); // Get a single record
+
+//   if (fetchError) {
+//     console.error("Error fetching data:", fetchError);
+//     return;
+//   }
+//    // Get the current list (or default to an empty array)
+//    const currentDoctors = patientData?.doctors_list || [];
+//   // Merge existing and new doctors, and deduplicate (optional)
+// const mergedDoctors = [...currentDoctors, ...doctors];
+
+// // Remove duplicates (if needed)
+// const uniqueDoctors = [...new Set(mergedDoctors)];
+
+// console.log("Fetched patient data:", patientData);
+// console.log("Current doctors list:", currentDoctors);
+// console.log("Merged doctors list:", mergedDoctors);
+// console.log("Unique doctors list:", uniqueDoctors);
+
+//   const { error: updateError } = await supabase
+//   .from('patients')
+//   .update({ doctors_list: uniqueDoctors })
+//   .eq('user_id', user.id);
   
+//   if (updateError) {
+//     console.error('Supabase save error:', updateError);
+//     setError('Failed to save doctor list');
+//   } else {
+//     console.log('Saved doctors:', uniqueDoctors);
+//   }
+// } catch (err) {
+//   console.error('Saving failed:', err);
+// }
+ }
+//  catch (err) {
+// console.error("API Error:", err);
+// setError("Error analyzing test results.");
+} finally {
+setLoading(false);
+}
+};
+
 return (
   <div className="min-h-screen bg-slate-50 flex flex-col items-center p-6 font-sans">
     <header className="w-full max-w-4xl mb-8">
