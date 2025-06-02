@@ -28,17 +28,62 @@ export default  async function Custemsidebar() {
         </div>
 
         <ul className="space-y-2">
-          {types.map((doct, i) => (
-            <li key={i}>
-              <Link href={`/Booking/type/${doct.name}`}>
-                <Catigo
-                  doct={doct.name}
-                  className="group flex items-center p-3 rounded-lg transition-all duration-200 cursor-pointer hover:bg-blue-50"
-                />
-              </Link>
-            </li>
-          ))}
-        </ul>
+  {types.map((doct, i) => (
+    <li key={i}>
+      <Link 
+        href={`/Booking/type/${doct.name}`}
+        className="group flex items-center p-4 rounded-lg transition-all duration-200 cursor-pointer hover:bg-blue-50 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500"
+      >
+        <Catigo 
+          doct={doct.name}
+          className="w-full"
+        />
+        <svg 
+          className="w-5 h-5 ml-2 text-gray-400 group-hover:text-blue-600 transition-colors"
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </Link>
+    </li>
+  ))}
+  
+  <li>
+    <Link 
+      href="/Booking"
+      className="flex items-center p-4 text-lg font-semibold text-blue-600 rounded-lg transition-all hover:bg-blue-50 hover:text-blue-700 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500"
+    >
+      <span>For You</span>
+      <svg 
+        className="w-5 h-5 ml-2 text-gray-400 group-hover:text-blue-600 transition-colors"
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </Link>
+  </li>
+  
+  <li>
+    <Link 
+      href="/Booking"
+      className="flex items-center p-4 text-lg font-semibold text-blue-600 rounded-lg transition-all hover:bg-blue-50 hover:text-blue-700 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500"
+    >
+      <span>All Doctors</span>
+      <svg 
+        className="w-5 h-5 ml-2 text-gray-400 group-hover:text-blue-600 transition-colors"
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </Link>
+  </li>
+</ul>
       </nav>
     </aside>
   );

@@ -186,42 +186,60 @@ const Header = () => {
 
   {/* Center Navigation */}
   {user && isPatient && (
-    <nav className="hidden lg:flex flex-1 justify-center items-center gap-8">
-      <Link href="/Home" className="text-white hover:text-blue-100 transition-colors font-medium">
-        Home
-      </Link>
+ <nav className="hidden lg:flex flex-1 justify-center items-center gap-8">
+ <Link 
+   href="/Home" 
+   className="text-white hover:text-blue-100 transition-colors font-medium"
+ >
+   Home
+ </Link>
 
-      <NavigationMenu>
-        <NavigationMenuList>
-          <NavigationMenuItem>
-            <NavigationMenuTrigger className="bg-transparent hover:bg-blue-700 text-white">
-              Services
-            </NavigationMenuTrigger>
-            <NavigationMenuContent className="min-w-[200px] p-2 bg-white rounded-lg shadow-xl">
-              <div className="flex flex-col gap-2">
-                <NavigationMenuLink asChild>
-                  <Link href="/Booking" className="px-4 py-2 hover:bg-blue-50 rounded-md text-gray-800 transition-colors">
-                    Book Appointment
-                  </Link>
-                </NavigationMenuLink>
-                <NavigationMenuLink asChild>
-                  <Link href="/Bloodtest" className="px-4 py-2 hover:bg-blue-50 rounded-md text-gray-800 transition-colors">
-                    Analyze Tests
-                  </Link>
-                </NavigationMenuLink>
-              </div>
-            </NavigationMenuContent>
-          </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
+ <NavigationMenu>
+   <NavigationMenuList>
+     <NavigationMenuItem>
+       <NavigationMenuTrigger className="bg-transparent hover:bg-blue-700 text-white">
+         Services
+       </NavigationMenuTrigger>
+       <NavigationMenuContent className="min-w-[200px] p-2 rounded-lg shadow-xl">
+         <div className="flex flex-col gap-2">
+           <NavigationMenuLink asChild>
+             <Link 
+               href="/Booking" 
+               className="px-4 py-2 hover:bg-blue-50 rounded-md text-gray-800 transition-colors"
+               legacyBehavior
+             >
+               Book Appointment
+             </Link>
+           </NavigationMenuLink>
+           <NavigationMenuLink asChild>
+             <Link 
+               href="/Tryblood" 
+               className="px-4 py-2 hover:bg-blue-50 rounded-md text-gray-800 transition-colors"
+               legacyBehavior
+             >
+               Analyze Tests
+             </Link>
+           </NavigationMenuLink>
+         </div>
+       </NavigationMenuContent>
+     </NavigationMenuItem>
+   </NavigationMenuList>
+ </NavigationMenu>
 
-      <Link href="/Doctors" className="text-white hover:text-blue-100 transition-colors font-medium">
-        Doctors
-      </Link>
-      <Link href="/contact" className="text-white hover:text-blue-100 transition-colors font-medium">
-        Contact Us
-      </Link>
-    </nav>
+ <Link 
+   href="/About" 
+   className="text-white hover:text-blue-100 transition-colors font-medium"
+ >
+   About
+ </Link>
+ 
+ <Link 
+   href="/contact" 
+   className="text-white hover:text-blue-100 transition-colors font-medium"
+ >
+   Contact Us
+ </Link>
+</nav>
   )}
 
   {/* Right Section */}
