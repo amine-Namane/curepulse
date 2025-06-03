@@ -151,7 +151,7 @@
 
 // export default ChatComponent;
 
-'use client'
+"use client"
 import { useState,useEffect } from "react";
 import { BeakerIcon, HeartIcon, ChartBarIcon, ClockIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
  import { supabase } from "@/lib/supabaseclient";
@@ -309,6 +309,7 @@ const handleChange = (e) => {
 setValues({ ...values, [e.target.name]: e.target.value });
 }; 
 const analyze = async () => {
+  const apiKey = process.env.NEXT_PUBLIC_OPENAI_KEY; 
 if (!selectedTestCategory) {
 setError("Please select a test category before analyzing.");
 return;
